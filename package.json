@@ -7,8 +7,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon src/index.ts",
     "tsc": "tsc",
-    "build": "npm run tsc && node build/index.js",
-    "start": "npm run build"
+    "build": "prisma generate && npm run tsc && node build/index.js",
+    "start": "npm run tsc && node build/index.js"
   },
   "keywords": [],
   "author": "",

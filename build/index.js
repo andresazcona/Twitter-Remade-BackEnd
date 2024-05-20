@@ -14,7 +14,7 @@ app.use('/user', authMiddleware_1.authenticateToken, userRoutes_1.default);
 app.use('/tweet', authMiddleware_1.authenticateToken, tweetRoutes_1.default);
 app.use('/auth', authRoutes_1.default);
 app.get('/', (req, res) => {
-    res.send('Hello "updated" world!');
+    res.send('Backend server is running!');
 });
 app.listen(3000, () => {
     console.log('Server ready at localhost:3000');

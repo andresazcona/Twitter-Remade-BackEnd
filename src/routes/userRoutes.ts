@@ -1,40 +1,31 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 
-const router = Router();
-const prisma = new PrismaClient();
+const router = Router(); // Crea un router de Express
+const prisma = new PrismaClient(); // Instancia de PrismaClient para interactuar con la base de datos
 
-// User CRUD
-
-/*
-  Test with curl:
-
-  curl -X POST -H "Content-Type: application/json" \
-       -d '{"name": "Elon Musk", "email": "doge@twitter.com", "username": "elon"}' \
-       http://localhost:3000/user/
-
-*/
-// Create user
+// Crear usuario
 router.post('/', async (req, res) => {
-  const { email, name, username } = req.body;
+  const { email, name, username } = req.body; // Extrae los datos del cuerpo de la solicitud
 
   try {
+    // Crea un nuevo usuario en la base de datos con los datos proporcionados
     const result = await prisma.user.create({
       data: {
         email,
         name,
         username,
-        bio: "Hello, I'm new on Twitter",
+        bio: "Hello, I'm new on Twitter", // Bio predeterminada para el nuevo usuario
       },
     });
 
-    res.json(result);
+    res.json(result); // Devuelve el usuario creado en formato JSON
   } catch (e) {
-    res.status(400).json({ error: 'Username and email should be unique' });
+    res.status(400).json({ error: 'Username and email should be unique' }); // Maneja errores de validación
   }
 });
 
-// list users
+// Listar usuarios
 router.get('/', async (req, res) => {
   const allUser = await prisma.user.findMany({
     // select: {
@@ -45,50 +36,48 @@ router.get('/', async (req, res) => {
     // },
   });
 
-  res.json(allUser);
+  res.json(allUser); // Devuelve todos los usuarios en formato JSON
 });
 
-// get one user
+// Obtener un usuario específico por su ID
 router.get('/:id', async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // Obtiene el ID del usuario de los parámetros de la URL
+
+  // Busca un usuario específico por su ID en la base de datos, incluyendo sus tweets asociados
   const user = await prisma.user.findUnique({
     where: { id: Number(id) },
     include: { tweets: true },
   });
 
-  res.json(user);
+  res.json(user); // Devuelve el usuario encontrado en formato JSON
 });
 
-/*
-  Test with curl:
-
-  curl -X PUT -H "Content-Type: application/json" \
-       -d '{"name": "Vadim", "bio": "Hello there!"}' \
-       http://localhost:3000/user/1
-
-*/
-// update user
+// Actualizar un usuario
 router.put('/:id', async (req, res) => {
-  const { id } = req.params;
-  const { bio, name, image } = req.body;
+  const { id } = req.params; // Obtiene el ID del usuario de los parámetros de la URL
+  const { bio, name, image } = req.body; // Extrae los datos actualizados del cuerpo de la solicitud
 
   try {
+    // Actualiza los datos del usuario en la base de datos
     const result = await prisma.user.update({
       where: { id: Number(id) },
       data: { bio, name, image },
     });
-    res.json(result);
+
+    res.json(result); // Devuelve el usuario actualizado en formato JSON
   } catch (e) {
-    res.status(400).json({ error: `Failed to update the user` });
+    res.status(400).json({ error: `Failed to update the user` }); // Maneja errores de actualización
   }
 });
 
-// curl -X DELETE http://localhost:3000/user/6
-// delete user
+// Eliminar un usuario
 router.delete('/:id', async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // Obtiene el ID del usuario de los parámetros de la URL
+  
+  // Elimina el usuario de la base de datos utilizando su ID
   await prisma.user.delete({ where: { id: Number(id) } });
-  res.sendStatus(200);
+
+  res.sendStatus(200); // Devuelve un estado 200 (OK) para indicar que el usuario ha sido eliminado correctamente
 });
 
-export default router;
+export default router; // Exporta el router para su uso en otros archivos

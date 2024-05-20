@@ -42,11 +42,6 @@ model Token {
   user User @relation(fields: [userId], references: [id])
 }
 
-// enum TokenType {
-//   EMAIL
-//   API
-// }
-
 model Tweet {
   id Int @id @default(autoincrement())
   createdAt DateTime @default(now())

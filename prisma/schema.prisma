@@ -21,8 +21,10 @@ model User {
   username String? @unique
   image String?
   bio String?
+  password String?
   isVerified Boolean @default(false)
 
+  
   tweets Tweet[]
   tokens Token[]
 }

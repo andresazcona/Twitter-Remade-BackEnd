@@ -6,7 +6,7 @@ const prisma = new PrismaClient(); // Instancia de PrismaClient para interactuar
 
 // Crear usuario
 router.post('/', async (req, res) => {
-  const { email, name, username } = req.body; // Extrae los datos del cuerpo de la solicitud
+  const { email, name, username, password } = req.body; // Extrae los datos del cuerpo de la solicitud
 
   try {
     // Crea un nuevo usuario en la base de datos con los datos proporcionados

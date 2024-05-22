@@ -1,120 +1,56 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { sendEmailToken } from '../services/emailService'; // Se asume que hay un servicio para enviar tokens por correo electrónico
 
-const EMAIL_TOKEN_EXPIRATION_MINUTES = 10; // Duración de validez del token de correo electrónico (en minutos)
-const AUTHENTICATION_EXPIRATION_HOURS = 12; // Duración de validez del token de autenticación (en horas)
-const JWT_SECRET = process.env.JWT_SECRET || 'SUPER SECRET'; // Clave secreta para firmar los tokens JWT
-const router = Router(); // Instancia de un router de Express
-const prisma = new PrismaClient(); // Instancia de PrismaClient para interactuar con la base de datos
+const JWT_SECRET = process.env.JWT_SECRET || 'SUPER SECRET';
+const router = Router();
+const prisma = new PrismaClient();
 
-// Función para generar un token de correo electrónico aleatorio
-function generateEmailToken(): string {
-  return Math.floor(10000000 + Math.random() * 90000000).toString();
-}
-
-// Función para generar un token JWT de autenticación
-function generateAuthToken(tokenId: number): string {
-  const jwtPayload = { tokenId };
-
-  return jwt.sign(jwtPayload, JWT_SECRET, {
-    algorithm: 'HS256',
-    noTimestamp: true,
-  });
-}
-
-// Ruta para iniciar el proceso de autenticación
-router.post('/login', async (req, res) => {
-  const { email } = req.body;
-
-  // Generar un token de correo electrónico y establecer su fecha de expiración
-  const emailToken = generateEmailToken();
-  const expiration = new Date(
-    new Date().getTime() + EMAIL_TOKEN_EXPIRATION_MINUTES * 60 * 1000
-  );
+// Ruta para registrar un nuevo usuario
+router.post('/register', async (req, res) => {
+  const { email, password, name, username } = req.body;
+  
+  // Verificar si el usuario ya existe
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+  if (existingUser) {
+    return res.status(400).json({ error: 'Email already in use' });
+  }
+  
+  // Hashear la contraseña
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
-    // Crear un nuevo token de correo electrónico en la base de datos y asociarlo con el usuario correspondiente
-    const createdToken = await prisma.token.create({
+    const newUser = await prisma.user.create({
       data: {
-        type: 'EMAIL',
-        emailToken,
-        expiration,
-        user: {
-          connectOrCreate: {
-            where: { email },
-            create: { email },
-          },
-        },
+        email,
+        password: hashedPassword,
+        name,
+        username,
       },
     });
-
-    // Enviar el token de correo electrónico al usuario (no implementado en este código)
-    await sendEmailToken(email, emailToken);
-    res.sendStatus(200);
+    res.status(201).json(newUser);
   } catch (e) {
-    console.log(e);
-    res
-      .status(400)
-      .json({ error: "Couldn't start the authentication process" });
+    res.status(400).json({ error: 'Error creating user' });
   }
 });
 
-// Ruta para validar el token de correo electrónico y generar un token de autenticación
-router.post('/authenticate', async (req, res) => {
-  const { email, emailToken } = req.body;
-
-  // Buscar el token de correo electrónico en la base de datos
-  const dbEmailToken = await prisma.token.findUnique({
-    where: {
-      emailToken,
-    },
-    include: {
-      user: true,
-    },
-  });
-
-  // Verificar si el token de correo electrónico es válido y no ha expirado
-  if (!dbEmailToken || !dbEmailToken.valid) {
-    return res.sendStatus(401);
+// Ruta para iniciar sesión
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+  
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid credentials' });
   }
 
-  if (dbEmailToken.expiration < new Date()) {
-    return res.status(401).json({ error: 'Token expired!' });
+  const validPassword = await bcrypt.compare(password, user.password);
+  if (!validPassword) {
+    return res.status(401).json({ error: 'Invalid credentials' });
   }
 
-  // Verificar si el correo electrónico del usuario coincide con el proporcionado en la solicitud
-  if (dbEmailToken?.user?.email !== email) {
-    return res.sendStatus(401);
-  }
-
-  // Generar un token de autenticación y asociarlo con el usuario
-  const expiration = new Date(
-    new Date().getTime() + AUTHENTICATION_EXPIRATION_HOURS * 60 * 60 * 1000
-  );
-  const apiToken = await prisma.token.create({
-    data: {
-      type: 'API',
-      expiration,
-      user: {
-        connect: {
-          email,
-        },
-      },
-    },
-  });
-
-  // Invalidar el token de correo electrónico utilizado
-  await prisma.token.update({
-    where: { id: dbEmailToken.id },
-    data: { valid: false },
-  });
-
-  // Generar el token JWT de autenticación
-  const authToken = generateAuthToken(apiToken.id);
-
-  res.json({ authToken });
+  const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '12h' });
+  res.json({ token });
 });
 
 export default router;

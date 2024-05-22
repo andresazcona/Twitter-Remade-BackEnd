@@ -11,23 +11,21 @@ datasource db {
 }
 
 model User {
-  id Int @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  email String @unique
-
-  name String?
-  username String? @unique
-  image String?
-  bio String?
-  password String?
+  email     String   @unique
+  name      String?
+  username  String?  @unique
+  image     String?
+  bio       String?
+  password  String   // Asegúrate de que este campo no sea opcional
   isVerified Boolean @default(false)
 
-  
   tweets Tweet[]
   tokens Token[]
 }
+
 
 model Token {
   id Int @id @default(autoincrement())

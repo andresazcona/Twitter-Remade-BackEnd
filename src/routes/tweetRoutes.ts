@@ -38,7 +38,7 @@ router.get('/', async (req, res) => {
           id: true,
           name: true,
           username: true,
-          image: true,
+          image: true, // Incluye la imagen del usuario
         },
       },
     },
@@ -66,11 +66,23 @@ router.get('/:id', async (req, res) => {
 });
 
 // Actualizar un Tweet
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   const { id } = req.params;
-  
-  // Devuelve un estado 501 (No implementado) para la actualización de tweets
-  res.status(501).json({ error: `Not Implemented: ${id}` });
+  const { content, image } = req.body;
+
+  try {
+    const updatedTweet = await prisma.tweet.update({
+      where: { id: Number(id) },
+      data: {
+        content,
+        image,
+      },
+      include: { user: true },
+    });
+    res.json(updatedTweet);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Eliminar un Tweet

@@ -18,7 +18,7 @@ router.post('/', async (req, res) => {
         name,
         username,
         password: hashedPassword, // Specify 'password' as a known property
-        bio: "Hello, I'm new on Twitter",
+        bio: "Hello, I'm new on Twitter", // Add 'bio' property
       },
     });
 

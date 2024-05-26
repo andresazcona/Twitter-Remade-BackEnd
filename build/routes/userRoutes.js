@@ -8,30 +8,27 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const client_1 = require("@prisma/client");
+const bcrypt_1 = __importDefault(require("bcrypt"));
 const router = (0, express_1.Router)();
 const prisma = new client_1.PrismaClient();
-// User CRUD
-/*
-  Test with curl:
-
-  curl -X POST -H "Content-Type: application/json" \
-       -d '{"name": "Elon Musk", "email": "doge@twitter.com", "username": "elon"}' \
-       http://localhost:3000/user/
-
-*/
-// Create user
 router.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, name, username } = req.body;
+    const { email, name, username, password } = req.body;
+    // Hashear la contraseña
+    const hashedPassword = yield bcrypt_1.default.hash(password, 10);
     try {
         const result = yield prisma.user.create({
             data: {
                 email,
                 name,
                 username,
-                bio: "Hello, I'm new on Twitter",
+                password: hashedPassword, // Specify 'password' as a known property
+                bio: "Hello, I'm new on Twitter", // Add 'bio' property
             },
         });
         res.json(result);
@@ -39,56 +36,5 @@ router.post('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     catch (e) {
         res.status(400).json({ error: 'Username and email should be unique' });
     }
-}));
-// list users
-router.get('/', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const allUser = yield prisma.user.findMany({
-    // select: {
-    //   id: true,
-    //   name: true,
-    //   image: true,
-    //   bio: true,
-    // },
-    });
-    res.json(allUser);
-}));
-// get one user
-router.get('/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
-    const user = yield prisma.user.findUnique({
-        where: { id: Number(id) },
-        include: { tweets: true },
-    });
-    res.json(user);
-}));
-/*
-  Test with curl:
-
-  curl -X PUT -H "Content-Type: application/json" \
-       -d '{"name": "Vadim", "bio": "Hello there!"}' \
-       http://localhost:3000/user/1
-
-*/
-// update user
-router.put('/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
-    const { bio, name, image } = req.body;
-    try {
-        const result = yield prisma.user.update({
-            where: { id: Number(id) },
-            data: { bio, name, image },
-        });
-        res.json(result);
-    }
-    catch (e) {
-        res.status(400).json({ error: `Failed to update the user` });
-    }
-}));
-// curl -X DELETE http://localhost:3000/user/6
-// delete user
-router.delete('/:id', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { id } = req.params;
-    yield prisma.user.delete({ where: { id: Number(id) } });
-    res.sendStatus(200);
 }));
 exports.default = router;

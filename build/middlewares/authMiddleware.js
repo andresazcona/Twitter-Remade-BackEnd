@@ -19,23 +19,18 @@ const JWT_SECRET = process.env.JWT_SECRET || 'SUPER SECRET';
 const prisma = new client_1.PrismaClient();
 function authenticateToken(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
-        // Authentication
         const authHeader = req.headers['authorization'];
-        const jwtToken = authHeader === null || authHeader === void 0 ? void 0 : authHeader.split(' ')[1];
-        if (!jwtToken) {
+        const token = authHeader === null || authHeader === void 0 ? void 0 : authHeader.split(' ')[1];
+        if (!token) {
             return res.sendStatus(401);
         }
-        // decode the jwt token
         try {
-            const payload = (yield jsonwebtoken_1.default.verify(jwtToken, JWT_SECRET));
-            const dbToken = yield prisma.token.findUnique({
-                where: { id: payload.tokenId },
-                include: { user: true },
-            });
-            if (!(dbToken === null || dbToken === void 0 ? void 0 : dbToken.valid) || dbToken.expiration < new Date()) {
-                return res.status(401).json({ error: 'API token expired' });
+            const payload = jsonwebtoken_1.default.verify(token, JWT_SECRET);
+            const user = yield prisma.user.findUnique({ where: { id: payload.userId } });
+            if (!user) {
+                return res.sendStatus(401);
             }
-            req.user = dbToken.user;
+            req.user = user;
         }
         catch (e) {
             return res.sendStatus(401);

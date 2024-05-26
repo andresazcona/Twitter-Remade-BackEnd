@@ -1,11 +1,20 @@
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import cors from 'cors';
 import userRoutes from './routes/userRoutes';
 import tweetRoutes from './routes/tweetRoutes';
 import authRoutes from './routes/authRoutes';
 import { authenticateSessionCookie } from './middlewares/authMiddleware';
 
 const app = express();
+
+// Configuración de CORS
+const corsOptions = {
+  origin: 'http://localhost:3000', // Reemplaza con la URL de tu frontend
+  credentials: true, // Permitir cookies y cabeceras de autorización
+};
+app.use(cors(corsOptions));
+
 app.use(express.json());
 app.use(cookieParser());
 

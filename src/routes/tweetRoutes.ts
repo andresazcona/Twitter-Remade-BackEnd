@@ -11,7 +11,6 @@ router.post('/', async (req, res) => {
   const user = req.user;
 
   try {
-    // Crea un nuevo tweet en la base de datos, asociándolo con el usuario actual
     const result = await prisma.tweet.create({
       data: {
         content,
@@ -23,14 +22,12 @@ router.post('/', async (req, res) => {
 
     res.json(result);
   } catch (e) {
-    // Maneja los errores de validación (por ejemplo, campos duplicados)
     res.status(400).json({ error: 'Username and email should be unique' });
   }
 });
 
 // Listar Tweets
 router.get('/', async (req, res) => {
-  // Obtiene todos los tweets de la base de datos, incluyendo la información del usuario que los creó
   const allTweets = await prisma.tweet.findMany({
     include: {
       user: {
@@ -38,7 +35,7 @@ router.get('/', async (req, res) => {
           id: true,
           name: true,
           username: true,
-          image: true, // Incluye la imagen del usuario
+          image: true,
         },
       },
     },
@@ -51,13 +48,11 @@ router.get('/:id', async (req, res) => {
   const { id } = req.params;
   console.log('Query tweet with id: ', id);
 
-  // Busca un tweet específico por su ID en la base de datos, incluyendo la información del usuario que lo creó
   const tweet = await prisma.tweet.findUnique({
     where: { id: Number(id) },
     include: { user: true },
   });
   
-  // Si el tweet no existe, devuelve un estado 404
   if (!tweet) {
     return res.status(404).json({ error: 'Tweet not found!' });
   }
@@ -89,9 +84,38 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   
-  // Elimina un tweet de la base de datos utilizando su ID
   await prisma.tweet.delete({ where: { id: Number(id) } });
   res.sendStatus(200);
+});
+
+// Buscar Tweets por contenido
+router.get('/search/:query', async (req, res) => {
+  const { query } = req.params;
+  
+  try {
+    const tweets = await prisma.tweet.findMany({
+      where: {
+        content: {
+          contains: query,
+          mode: 'insensitive',
+        },
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            image: true,
+          },
+        },
+      },
+    });
+
+    res.json(tweets);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 export default router;

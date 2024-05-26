@@ -7,13 +7,12 @@ const prisma = new PrismaClient();
 
 type AuthRequest = Request & { user?: User };
 
-export async function authenticateToken(
+export async function authenticateSessionCookie(
   req: AuthRequest,
   res: Response,
- next: NextFunction
+  next: NextFunction
 ) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader?.split(' ')[1];
+  const token = req.cookies['session'];
 
   if (!token) {
     return res.sendStatus(401);
@@ -34,4 +33,3 @@ export async function authenticateToken(
 
   next();
 }
-

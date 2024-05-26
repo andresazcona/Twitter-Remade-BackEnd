@@ -19,15 +19,12 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const JWT_SECRET = process.env.JWT_SECRET || 'SUPER SECRET';
 const router = (0, express_1.Router)();
 const prisma = new client_1.PrismaClient();
-// Ruta para registrar un nuevo usuario
 router.post('/register', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password, name, username } = req.body;
-    // Verificar si el usuario ya existe
     const existingUser = yield prisma.user.findUnique({ where: { email } });
     if (existingUser) {
         return res.status(400).json({ error: 'Email already in use' });
     }
-    // Hashear la contraseña
     const hashedPassword = yield bcrypt_1.default.hash(password, 10);
     try {
         const newUser = yield prisma.user.create({
@@ -44,7 +41,6 @@ router.post('/register', (req, res) => __awaiter(void 0, void 0, void 0, functio
         res.status(400).json({ error: 'Error creating user' });
     }
 }));
-// Ruta para iniciar sesión
 router.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
     const user = yield prisma.user.findUnique({ where: { email } });
@@ -59,6 +55,7 @@ router.post('/login', (req, res) => __awaiter(void 0, void 0, void 0, function* 
         return res.status(401).json({ error: 'Invalid credentials' });
     }
     const token = jsonwebtoken_1.default.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '12h' });
-    res.json({ token });
+    res.cookie('session', token, { httpOnly: true });
+    res.json({ message: 'Login successful' });
 }));
 exports.default = router;

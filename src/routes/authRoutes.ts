@@ -7,17 +7,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'SUPER SECRET';
 const router = Router();
 const prisma = new PrismaClient();
 
-// Ruta para registrar un nuevo usuario
 router.post('/register', async (req, res) => {
   const { email, password, name, username } = req.body;
   
-  // Verificar si el usuario ya existe
   const existingUser = await prisma.user.findUnique({ where: { email } });
   if (existingUser) {
     return res.status(400).json({ error: 'Email already in use' });
   }
   
-  // Hashear la contraseña
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
@@ -35,7 +32,6 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Ruta para iniciar sesión
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   
@@ -54,7 +50,8 @@ router.post('/login', async (req, res) => {
   }
 
   const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: '12h' });
-  res.json({ token });
+  res.cookie('session', token, { httpOnly: true });
+  res.json({ message: 'Login successful' });
 });
 
 export default router;
